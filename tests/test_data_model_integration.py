@@ -1,12 +1,20 @@
-import emll
+"""Tests for data-model integration utilities.
+
+Validates the functions that link experimental multi-omics observations to
+BayesMCA lin-log model predictions within PyMC probabilistic models,
+including handling of missing data, shape validation, and proper construction
+of observation likelihoods.
+"""
+
+import bayesmca
 import numpy as np
 import pandas as pd
 import pymc as pm
 import pytensor
 import pytest 
 
-from emll.data_model_integration import create_noisy_observations_of_computed_values
-from emll.data_model_integration import create_pytensor_from_data_naive
+from bayesmca.data_model_integration import create_noisy_observations_of_computed_values
+from bayesmca.data_model_integration import create_pytensor_from_data_naive
 from pytensor.graph.basic import ancestors
 from pytensor.tensor.variable import TensorVariable
 from pytensor.tensor.random.op import RandomVariable 
@@ -413,7 +421,7 @@ def test_create_pytensor_from_data():
             # Verify inputs steady state
             assert np.allclose(stoich_matrix @ ref_flux, 0), "The reference flux values do not lead to a steady state."
 
-            lin_log = emll.LinLogLeastNorm(stoich_matrix, 
+            lin_log = bayesmca.LinLogLeastNorm(stoich_matrix, 
                                     internal_elasticities, 
                                     external_elasticities, 
                                     ref_flux, 

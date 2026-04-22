@@ -1,11 +1,14 @@
-# Code to run the ADVI inference with a near-genome scale model and relative
-# omics data.
-
-# So I've found that for certain hardware (the intel chips on the cluster here,
-# for instance) the intel python and mkl-numpy are about 2x as fast as the
-# openblas versions. You can delete a bunch of this stuff if it doesn't work
-# for you. This example is a lot slower than some of the other ones though, but
-# I guess that's expected
+# BayesMCA: Run ADVI inference with a near-genome scale model and relative
+# omics data (Hackett et al. yeast dataset).
+#
+# This script demonstrates the full BayesMCA workflow:
+# 1. Load a COBRA metabolic model and experimental multi-omics data
+# 2. Define Bayesian priors on elasticity coefficients and enzyme levels
+# 3. Compute lin-log steady states symbolically via PyTensor
+# 4. Run variational inference (ADVI) to fit the probabilistic model
+#
+# Note: For certain hardware (e.g., Intel chips), the intel python and
+# mkl-numpy distributions can be ~2x faster than openblas versions.
 
 import os
 import pandas as pd
@@ -13,8 +16,8 @@ import numpy as np
 import pymc as pm
 import pytensor.tensor as T
 import cobra
-import emll
-from emll.util import initialize_elasticity
+import bayesmca
+from bayesmca.util import initialize_elasticity
 
 os.environ["MKL_THREADING_LAYER"] = "GNU"
 
@@ -80,12 +83,12 @@ e_zero_inds = np.array(e_zero_inds)
 e_indexer = np.hstack([e_inds, e_laplace_inds, e_zero_inds]).argsort()
 
 N = cobra.util.create_stoichiometric_matrix(model)
-Ex = emll.util.create_elasticity_matrix(model)
-Ey = emll.util.create_Ey_matrix(model)
+Ex = bayesmca.util.create_elasticity_matrix(model)
+Ey = bayesmca.util.create_Ey_matrix(model)
 
 Ex *= 0.1 + 0.8 * np.random.rand(*Ex.shape)
 
-ll = emll.LinLogLeastNorm(N, Ex, Ey, v_star.values, driver="gelsy")
+ll = bayesmca.LinLogLeastNorm(N, Ex, Ey, v_star.values, driver="gelsy")
 
 np.random.seed(1)
 

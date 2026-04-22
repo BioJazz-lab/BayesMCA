@@ -1,4 +1,9 @@
-#!/usr/bin/python
+"""Tests for PyTensor custom operations (RegularizedSolve, LeastSquaresSolve).
+
+Verifies gradient correctness of the custom PyTensor solve operations used in
+BayesMCA's Bayesian inference pipeline, including Tikhonov-regularized and
+least-squares solvers.
+"""
 
 import numpy as np
 import scipy as sp

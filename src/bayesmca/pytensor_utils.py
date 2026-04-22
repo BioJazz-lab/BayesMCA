@@ -1,3 +1,20 @@
+"""Custom PyTensor operations for linear system solvers used in BayesMCA.
+
+Provides differentiable (gradient-aware) PyTensor operations for solving
+linear systems ``Ax = b`` that arise in the lin-log steady-state equations.
+These operations support automatic differentiation through PyMC's MCMC and
+variational inference algorithms.
+
+Classes:
+    SymPosSolve: Solver for symmetric positive-definite systems using Cholesky decomposition.
+    RegularizedSolve: Tikhonov-regularized solver that minimizes ``||Ax - b||² + λ||x||²``.
+    LeastSquaresSolve: Least-squares solver for potentially rank-deficient systems.
+
+Functions:
+    sympos_solve_wrapper: Low-level LAPACK wrapper for symmetric positive-definite solves.
+    lstsq_wrapper: Wrapper around ``scipy.linalg.lstsq`` with configurable LAPACK driver.
+"""
+
 import numpy as np
 import scipy as sp
 

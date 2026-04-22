@@ -1,3 +1,11 @@
+"""Integration utilities for combining experimental data with BayesMCA models.
+
+Provides helper functions for creating PyMC observation likelihoods that
+link measured multi-omics data (metabolite concentrations, enzyme levels,
+fluxes) to the lin-log model predictions. Handles missing data, varying
+measurement uncertainties, and mixed observed/unobserved variables.
+"""
+
 import pymc as pm
 import pytensor 
 import pandas as pd

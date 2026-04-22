@@ -1,4 +1,9 @@
-"""Test file for Antimony to Cobra conversion"""
+"""Tests for Antimony-to-COBRA model conversion utilities.
+
+Verifies that the ``ant_to_cobra`` helper correctly converts Antimony kinetic
+models into COBRA-compatible SBML files by comparing the resulting
+stoichiometric matrices.
+"""
 
 import logging
 from pathlib import Path
@@ -7,7 +12,7 @@ import cobra
 import pytest
 import tellurium as te
 
-from emll.util import ant_to_cobra
+from bayesmca.util import ant_to_cobra
 
 logging.getLogger("cobra").setLevel(logging.ERROR)
 
