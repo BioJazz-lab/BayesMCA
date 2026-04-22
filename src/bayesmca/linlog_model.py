@@ -1,4 +1,28 @@
-""" Model Definition File for LinLog algorithm """
+"""Lin-log kinetic model definitions for BayesMCA.
+
+This module implements the core linear-logarithmic (lin-log) kinetic model classes
+used for computing steady-state metabolite concentrations and fluxes. The lin-log
+framework approximates enzyme kinetics as linear functions of log-transformed
+metabolite concentrations, enabling efficient Bayesian inference of metabolic
+control properties.
+
+Classes:
+    LinLogBase: Abstract base class providing the lin-log steady-state equations.
+    LinLogSymbolic2x2: Specialized solver for 2x2 full-rank systems using symbolic inversion.
+    LinLogLinkMatrix: Solver using the link matrix decomposition for dimensionality reduction.
+    LinLogLeastNorm: Solver using least-norm (pseudoinverse) solutions via LAPACK routines.
+    LinLogTikhonov: Solver with Tikhonov regularization for ill-conditioned systems.
+    LinLogPinv: Extended pseudoinverse solver supporting solution basis constraints.
+
+References:
+    - Smallbone et al. (2007). "Something from nothing − bridging the gap between
+      constraint-based and kinetic modelling."
+    - Visser & Heijnen (2003). "Dynamic simulation and metabolic re-design of a
+      branched pathway using linlog kinetics."
+    - St. John et al. (2019). "Bayesian inference of metabolic kinetics from genome-scale
+      multiomics data." PLOS Computational Biology.
+"""
+
 import warnings
 
 import numpy as np
@@ -8,8 +32,8 @@ import pytensor
 import pytensor.tensor as at
 import pytensor.tensor.slinalg
 
-from emll.pytensor_utils import RegularizedSolve, LeastSquaresSolve, lstsq_wrapper
-from emll.util import compute_smallbone_reduction, compute_waldherr_reduction
+from bayesmca.pytensor_utils import RegularizedSolve, LeastSquaresSolve, lstsq_wrapper
+from bayesmca.util import compute_smallbone_reduction, compute_waldherr_reduction
 
 
 _floatX = pytensor.config.floatX
@@ -94,15 +118,32 @@ class LinLogBase:
         en=None,
         yn=None,
     ):
-        """Calculate a the steady-state transformed metabolite concentrations
-        and fluxes using a matrix solve method.
+        """Calculate steady-state metabolite concentrations and fluxes using NumPy.
 
-        en: np.ndarray
-            a NR vector of perturbed normalized enzyme activities
-        yn: np.ndarray
-            a NY vector of normalized external metabolite concentrations
-        Ex, Ey: optional replacement elasticity matrices
+        Solves the lin-log steady-state equation:
+            Nr @ diag(v* ⊙ e) @ (1 + Ex @ x + Ey @ y) = 0
 
+        Rearranged to the linear system ``A @ x = b`` where:
+            A = Nr @ diag(v* ⊙ e) @ Ex
+            b = -Nr @ diag(v* ⊙ e) @ (1 + Ey @ y)
+
+        Parameters
+        ----------
+        Ex : np.ndarray, optional
+            (nr x nm) elasticity matrix for internal metabolites.
+        Ey : np.ndarray, optional
+            (nr x ny) elasticity matrix for external metabolites.
+        en : np.ndarray, optional
+            Length-nr vector of normalized enzyme activities (1.0 = reference).
+        yn : np.ndarray, optional
+            Length-ny vector of log-transformed external metabolite perturbations.
+
+        Returns
+        -------
+        xn : np.ndarray
+            Steady-state log-concentration perturbations (length nm).
+        vn : np.ndarray
+            Steady-state normalized flux vector (length nr).
         """
         Ex, Ey, en, yn = self._generate_default_inputs(Ex, Ey, en, yn)
 
@@ -118,14 +159,31 @@ class LinLogBase:
         return xn, vn
 
     def steady_state_pytensor(self, Ex, Ey=None, en=None, yn=None, method="scan"):
-        """Calculate a the steady-state transformed metabolite concentrations
-        and fluxes using PyTensor.
+        """Calculate steady-state concentrations and fluxes using PyTensor (symbolic).
 
-        Ex, Ey, en and yn should be pytensor matrices
+        Equivalent to ``steady_state_mat`` but operates on PyTensor tensors,
+        enabling automatic differentiation for use in PyMC probabilistic models.
+        Supports batched computation over multiple experimental conditions.
 
-        solver: function
-            A function to solve Ax = b for a (possibly) singular A. Should
-            accept pytensor matrices A and b, and return a symbolic x.
+        Parameters
+        ----------
+        Ex : pytensor.tensor
+            (nr x nm) elasticity matrix (symbolic).
+        Ey : pytensor.tensor, optional
+            (nr x ny) external elasticity matrix.
+        en : pytensor.tensor or np.ndarray
+            (n_exp x nr) matrix of enzyme activities per experiment.
+        yn : pytensor.tensor or np.ndarray
+            (n_exp x ny) matrix of external metabolite perturbations.
+        method : str
+            'scan' uses pytensor.scan for loop; otherwise unrolls the loop.
+
+        Returns
+        -------
+        xn : pytensor.tensor
+            (n_exp x nm) steady-state concentration perturbations.
+        vn : pytensor.tensor
+            (n_exp x nr) steady-state normalized fluxes.
         """
 
         if Ey is None:
@@ -166,12 +224,21 @@ class LinLogBase:
         return xn, vn
 
     def metabolite_control_coefficient(self, Ex=None, Ey=None, en=None, yn=None):
-        """Calculate the metabolite control coefficient matrix at the desired
-        perturbed state.
+        """Calculate the metabolite control coefficient (MCC) matrix.
 
-        Note: These don't agree with the older method (using the pseudoinverse
-        link matrix), so maybe don't trust MCC's all that much. FCC's agree though.
+        The MCC matrix C^x has entries C^x_{i,j} = (∂ ln x_i / ∂ ln e_j),
+        quantifying how a fractional change in enzyme j activity affects
+        metabolite i concentration at steady state.
 
+        Parameters
+        ----------
+        Ex, Ey, en, yn : optional
+            See ``steady_state_mat`` for parameter descriptions.
+
+        Returns
+        -------
+        Cx : np.ndarray
+            (nm x nr) metabolite control coefficient matrix.
         """
 
         Ex, Ey, en, yn = self._generate_default_inputs(Ex, Ey, en, yn)
@@ -189,8 +256,22 @@ class LinLogBase:
         return Cx
 
     def flux_control_coefficient(self, Ex=None, Ey=None, en=None, yn=None):
-        """Calculate the metabolite control coefficient matrix at the desired
-        perturbed state"""
+        """Calculate the flux control coefficient (FCC) matrix.
+
+        The FCC matrix C^v has entries C^v_{i,j} = (∂ ln v_i / ∂ ln e_j),
+        quantifying how a fractional change in enzyme j activity affects
+        flux i at steady state.  Related to the MCC via: C^v = I + Ex_ss @ C^x.
+
+        Parameters
+        ----------
+        Ex, Ey, en, yn : optional
+            See ``steady_state_mat`` for parameter descriptions.
+
+        Returns
+        -------
+        Cv : np.ndarray
+            (nr x nr) flux control coefficient matrix.
+        """
 
         Ex, Ey, en, yn = self._generate_default_inputs(Ex, Ey, en, yn)
 
@@ -206,7 +287,12 @@ class LinLogBase:
 
 
 class LinLogSymbolic2x2(LinLogBase):
-    """Class for handling special case of a 2x2 full rank A matrix"""
+    """Lin-log solver for the special case of a 2x2 full-rank system.
+
+    Uses closed-form symbolic matrix inversion (Cramer's rule) instead of
+    a numerical solver. Only applicable when the reduced stoichiometric
+    matrix yields a 2x2 linear system.
+    """
 
     def solve(self, A, bi):
         a = A[0, 0]
@@ -228,6 +314,12 @@ class LinLogSymbolic2x2(LinLogBase):
 
 
 class LinLogLinkMatrix(LinLogBase):
+    """Lin-log solver using the link matrix for dimensionality reduction.
+
+    Reduces the system via the link matrix L (from Smallbone decomposition),
+    transforming the potentially rank-deficient system into a full-rank one:
+        A_linked = A @ L,  then solve A_linked @ z = b,  x = L @ z.
+    """
     def solve(self, A, b):
         A_linked = A @ self.L
         z = sp.linalg.solve(A_linked, b)
@@ -240,7 +332,11 @@ class LinLogLinkMatrix(LinLogBase):
 
 
 class LinLogLeastNorm(LinLogBase):
-    """Uses dgels to solve for the least-norm solution to the linear equation"""
+    """Lin-log solver using least-norm (pseudoinverse) solutions.
+
+    Solves ``Ax = b`` via LAPACK least-squares routines (e.g., GELSY, GELSD),
+    returning the minimum-norm solution when the system is underdetermined.
+    """
 
     def __init__(self, N, Ex, Ey, v_star, driver="gelsy", **kwargs):
         self.driver = driver
@@ -255,7 +351,12 @@ class LinLogLeastNorm(LinLogBase):
 
 
 class LinLogTikhonov(LinLogBase):
-    """Adds regularization to the linear solve, assumes A matrix is positive semi-definite"""
+    """Lin-log solver with Tikhonov regularization.
+
+    Solves ``min ||Ax - b||² + λ||x||²`` via the normal equations with a
+    regularization parameter λ. Useful for ill-conditioned systems where the
+    unregularized solve is numerically unstable.
+    """
 
     def __init__(self, N, Ex, Ey, v_star, lambda_=None, **kwargs):
         self.lambda_ = lambda_ if lambda_ else 0
@@ -276,6 +377,12 @@ class LinLogTikhonov(LinLogBase):
 
 
 class LinLogPinv(LinLogLeastNorm):
+    """Lin-log solver using pseudoinverse with a solution basis constraint.
+
+    Extends the least-norm solver by projecting the solution onto a specified
+    basis, useful when additional constraints on the metabolite concentration
+    space are available from prior knowledge or sampling.
+    """
     def steady_state_pytensor(
         self,
         Ex,

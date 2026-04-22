@@ -1,13 +1,19 @@
-""" Test File for linlog model methods """
+"""Tests for lin-log kinetic model steady-state solvers and control coefficients.
+
+Validates that the various LinLog solver implementations (least-norm, Tikhonov,
+link-matrix) produce consistent steady-state solutions and correct metabolite/flux
+control coefficients across multiple reference COBRA models.
+"""
+
 import numpy as np
 import pytest
 
 import pytensor
 import pytensor.tensor as at
 
-from emll.test_models import models
-from emll.linlog_model import LinLogLeastNorm, LinLogLinkMatrix, LinLogTikhonov
-from emll.util import create_elasticity_matrix, create_Ey_matrix
+from bayesmca.test_models import models
+from bayesmca.linlog_model import LinLogLeastNorm, LinLogLinkMatrix, LinLogTikhonov
+from bayesmca.util import create_elasticity_matrix, create_Ey_matrix
 
 pytensor.config.compute_test_value = "ignore"
 pytensor.config.optimizer = "fast_compile"

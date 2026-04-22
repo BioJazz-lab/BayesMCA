@@ -1,3 +1,15 @@
+"""Utility functions for BayesMCA metabolic model construction and analysis.
+
+Provides tools for:
+    - Constructing elasticity matrices (Ex, Ey) from COBRA metabolic models
+    - Stoichiometric matrix reduction (Waldherr SVD, Smallbone QR methods)
+    - Initializing Bayesian priors on elasticity parameters for PyMC models
+    - Converting Antimony kinetic models to COBRA-compatible SBML format
+
+These utilities bridge constraint-based metabolic models (COBRA) with the
+lin-log kinetic framework used by BayesMCA for Bayesian inference.
+"""
+
 import numpy as np
 import scipy as sp
 import pytensor.tensor as at
