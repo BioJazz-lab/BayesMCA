@@ -4,7 +4,7 @@ version = "0.1.1-dev"
 description = "BayesMCA: Bayesian Metabolic Control Analysis using LinLog Kinetics"
 readme = "README.md"
 requires-python = ">=3.9"
-license = "LGPL-2.1-or-later"
+license = "GPL-2.0-or-later AND LGPL-2.1-or-later"
 authors = [
     { name = "Peter St. John", email = "me@pcstj.com" },
 ]
@@ -71,25 +71,6 @@ multi_line_output = 3
 line_length = 100
 include_trailing_comma = true
 reverse_relative = true
-
-[tool.flake8]
-ignore = ["S301", "S403", "S404", "S603", "W503", "E203"]
-exclude = [
-    ".tox",
-    ".git",
-    "__pycache__",
-    "build",
-    "dist",
-    "tests/fixtures/*",
-    "*.pyc",
-    "*.egg-info",
-    ".cache",
-    ".eggs",
-    "data",
-]
-max-line-length = 100
-max-complexity = 20
-application-import-names = ["bayesmca", "tests"]
 
 [tool.mypy]
 ignore_missing_imports = true
