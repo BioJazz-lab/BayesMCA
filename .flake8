@@ -1,0 +1,25 @@
+[flake8]
+ignore =
+    S301
+    S403
+    S404
+    S603
+    W503
+    E203
+exclude =
+    .tox,
+    .git,
+    __pycache__,
+    build,
+    dist,
+    tests/fixtures/*,
+    *.pyc,
+    *.egg-info,
+    .cache,
+    .eggs,
+    data
+max-line-length = 100
+max-complexity = 20
+application-import-names =
+    bayesmca
+    tests

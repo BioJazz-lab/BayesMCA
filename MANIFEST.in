@@ -1,3 +1,0 @@
-include src/bayesmca/test_models/*.json
-include src/bayesmca/test_models/BIOMD0000000064.xml
-include src/bayesmca/test_models/jol2012_vstar.p
