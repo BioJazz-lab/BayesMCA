@@ -109,3 +109,6 @@ mypy.ini
 
 # pytest cache
 .pytest_cache
+
+# uv
+uv.lock

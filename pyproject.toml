@@ -1,10 +1,69 @@
+[project]
+name = "bayesmca"
+version = "0.1.1-dev"
+description = "BayesMCA: Bayesian Metabolic Control Analysis using LinLog Kinetics"
+readme = "README.md"
+requires-python = ">=3.9"
+license = "LGPL-2.1-or-later"
+authors = [
+    { name = "Peter St. John", email = "me@pcstj.com" },
+]
+maintainers = [
+    { name = "Andrew D. McNaughton", email = "andrew.mcnaughton@pnnl.gov" },
+]
+classifiers = [
+    "Framework :: Pytest",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3 :: Only",
+]
+keywords = [
+    "bayesian inference",
+    "metabolic modeling",
+    "kinetics",
+]
+dependencies = [
+    "matplotlib",
+    "patsy",
+    "seaborn",
+    "tqdm",
+    "numpy",
+    "pandas",
+    "scipy",
+    "cython",
+    "cobra",
+    "swiglpk",
+    "pymc==5.9.2",
+]
+
+[project.optional-dependencies]
+tests = ["pytest"]
+
+[project.urls]
+Homepage = "https://github.com/BioJazz-lab/BayesMCA"
+Repository = "https://github.com/BioJazz-lab/BayesMCA"
+Issues = "https://github.com/BioJazz-lab/BayesMCA/issues"
+Download = "https://github.com/BioJazz-lab/BayesMCA/releases"
+
 [build-system]
-requires = ["setuptools","wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/bayesmca"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/bayesmca/**",
+    "LICENSE",
+    "README.md",
+]
 
 [tool.black]
 line-length = 100
-target-version = ["py38", "py39", "py310", "py311"]
+target-version = ["py39", "py310", "py311"]
 
 [tool.isort]
 profile = "black"
@@ -12,3 +71,25 @@ multi_line_output = 3
 line_length = 100
 include_trailing_comma = true
 reverse_relative = true
+
+[tool.flake8]
+ignore = ["S301", "S403", "S404", "S603", "W503", "E203"]
+exclude = [
+    ".tox",
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    "tests/fixtures/*",
+    "*.pyc",
+    "*.egg-info",
+    ".cache",
+    ".eggs",
+    "data",
+]
+max-line-length = 100
+max-complexity = 20
+application-import-names = ["bayesmca", "tests"]
+
+[tool.mypy]
+ignore_missing_imports = true

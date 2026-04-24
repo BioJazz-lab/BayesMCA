@@ -20,10 +20,12 @@ Works using this codebase:
 
 ## Installation
 
+This project uses [uv](https://docs.astral.sh/uv/) for dependency management and packaging.
+
 Install directly from GitHub:
 
 ```shell
-pip install git+https://github.com/BioJazz-lab/BayesMCA.git
+uv pip install git+https://github.com/BioJazz-lab/BayesMCA.git
 ```
 
 Or install in developer (editable) mode:
@@ -31,7 +33,13 @@ Or install in developer (editable) mode:
 ```shell
 git clone https://github.com/BioJazz-lab/BayesMCA.git
 cd BayesMCA
-python -m pip install -e .
+uv pip install -e .
+```
+
+You can also use pip if you prefer:
+
+```shell
+pip install git+https://github.com/BioJazz-lab/BayesMCA.git
 ```
 
 Verify the installation:
@@ -42,7 +50,7 @@ python -c "import bayesmca"
 
 ### Dependencies
 
-Core dependencies are installed automatically (see `setup.cfg`). For the full
+Core dependencies are installed automatically (see `pyproject.toml`). For the full
 development/notebook environment, use the provided conda environment file:
 
 ```shell
